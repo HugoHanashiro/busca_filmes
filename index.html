@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Busca de filmes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@600&display=swap" rel="stylesheet">
+    <style>
+        html,
+        body {
+            margin: 0px;
+            padding: 0px;
+            background-color: #17162E;
+            display: flex;
+            justify-content: center;
+            color: #FFFFFF;
+            font-family: 'Kumbh Sans', sans-serif;
+        }
+
+        .container {
+            width: 85vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+            row-gap: 30px;
+        }
+
+        .caixaPesquisa {
+            background-color: rgba(69, 69, 88, 255);
+            border-radius: 8px;
+            width: 634px;
+            height: 74px;
+            display: flex;
+            align-items: center;
+        }
+
+        .caixaPesquisa #iptPesquisa {
+            /* opacity: 0.2; */
+            border-radius: 8px;
+            border: none;
+            background-color: #454558;
+            color: #ffffff;
+            height: 90%;
+            width: 100%;
+            font-size: 18px;
+            box-sizing: border-box;
+            padding: 10px;
+        }
+
+        .caixaPesquisa img {
+            width: 30px;
+            height: 30px;
+        }
+
+        .caixaPesquisa button {
+            height: 100%;
+            background-color: transparent;
+            border: none;
+        }
+
+        .containerFilmes {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            row-gap: 15px;
+        }
+
+        .filme {
+            background-color: #1D1C3B;
+            width: 100%;
+            min-height: 200px;
+            height: fit-content;
+            display: flex;
+            border-radius: 8px;
+            box-shadow: 5px 10px 8px #000000;
+        }
+
+        .filme-imagem {
+            width: 20%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+
+        .filme-imagem img {
+            border-radius: 50%;
+            width: 150px;
+            height: 150px;
+        }
+
+        .filme-titulo-acoes {
+            width: 30%;
+        }
+
+        .filme-descricao {
+            width: 50%;
+            min-height: 100%;
+            overflow: scroll;
+        }
+
+        .filme-titulo-acoes {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            box-sizing: border-box;
+            padding: 15px;
+            row-gap: 15px;
+        }
+
+        .divTitulo {
+            width: 100%;
+        }
+
+        .divAcoes {
+            width: 100%;
+            display: flex;
+            column-gap: 15%;
+        }
+
+        .divNota {
+            display: flex;
+            align-items: center;
+            column-gap: 3px;
+        }
+
+        .divFavoritar {
+            display: flex;
+            align-items: center;
+            column-gap: 3px;
+        }
+
+        .filme-descricao {
+            box-sizing: border-box;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body onload="listarFilmes()">
+    <div class="container">
+        <h1>
+            Filmes Populares
+        </h1>
+        <div class="caixaPesquisa">
+            <input type="text" id="iptPesquisa" placeholder="Digite algum filme para pesquisar...">
+            <button onclick="search()"><img src="./img/lupa.png" alt="ícone de lupa"></button>
+        </div>
+        <div class="mostrarFavoritos">
+            <input type="checkbox" id="checkFavoritos">
+            <label for="checkFavoritos">Mostrar meus filmes favoritos apenas</label>
+        </div>
+        <div class="containerFilmes"></div>
+    </div>
+</body>
+<script>
+    document.getElementById('iptPesquisa').addEventListener('keydown', event => {
+        if(event.key === "Enter" && iptPesquisa.value != ""){
+            search();
+        }
+    })
+
+    function renderMovie(movie) {
+        // criando a lista de filmes
+        const listaFilmes = document.getElementsByClassName('containerFilmes')[0];
+        // criando um filme
+        const filme = document.createElement('div');
+        filme.classList.add('filme');
+        listaFilmes.appendChild(filme);
+        // colocando a filme-imagem, filme-titulo-acoes e filme-descricao no filme
+        const divFilmeImagem = document.createElement('div');
+        const divFilmeTituloAcoes = document.createElement('div');
+        const divFilmeDescricao = document.createElement('div');
+        divFilmeImagem.classList.add("filme-imagem");
+        divFilmeTituloAcoes.classList.add("filme-titulo-acoes");
+        divFilmeDescricao.classList.add("filme-descricao");
+        filme.appendChild(divFilmeImagem);
+        filme.appendChild(divFilmeTituloAcoes);
+        filme.appendChild(divFilmeDescricao);
+        // colocando uma imagem
+        const imagemDoFilme = document.createElement('img');
+        imagemDoFilme.src = movie.image;//Dinâmico
+        imagemDoFilme.alt = `Capa do filme ${movie.title}`;//Dinâmico
+        divFilmeImagem.appendChild(imagemDoFilme);
+        // criando a div título
+        const divDoTitulo = document.createElement('div');
+        divDoTitulo.classList.add('divTitulo');
+        divDoTitulo.textContent = `${movie.title} (${movie.year})`;//Dinâmico
+        divFilmeTituloAcoes.appendChild(divDoTitulo);
+        // Criando a div ações
+        const divDasAcoes = document.createElement('div');
+        divDasAcoes.classList.add('divAcoes');
+        divFilmeTituloAcoes.appendChild(divDasAcoes);
+        // Criando as divs de cada uma das ações
+        const divDaNota = document.createElement('div');
+        const divParaFavoritar = document.createElement('div');
+        divDaNota.classList.add('divNota');
+        divParaFavoritar.classList.add('divFavoritar');
+        divDasAcoes.appendChild(divDaNota);
+        divDasAcoes.appendChild(divParaFavoritar);
+        // colocando a imagem da estrela na nota
+        const imagemEstrela = document.createElement('img');
+        imagemEstrela.src = "./img/star.png";
+        imagemEstrela.alt = "Ícone de uma estrela";
+        divDaNota.appendChild(imagemEstrela);
+        // colocando a nota do filme
+        const notaDoFilme = document.createElement('span');
+        notaDoFilme.classList.add("spnTextoNota");
+        notaDoFilme.textContent = movie.rating//Dinâmico
+        divDaNota.appendChild(notaDoFilme);
+        // colocando o ícone de favoritar
+        const imagemCoracao = document.createElement('img');
+        if (movie.isFavorited) {
+            imagemCoracao.src = "./img/heart_filled.png";
+            imagemCoracao.alt = "Ícone de um coração preenchido";
+        } else {
+            imagemCoracao.src = "./img/heart.png";
+            imagemCoracao.alt = "Ícone de um coração";
+        }
+        divParaFavoritar.appendChild(imagemCoracao);
+        // colocando o texto favoritar
+        const textoFavoritar = document.createElement('span');
+        textoFavoritar.textContent = "Favoritar";
+        divParaFavoritar.appendChild(textoFavoritar);
+        // colocando a descrição do filme
+        divFilmeDescricao.textContent = movie.description; // Dinâmico
+    }
+
+    function emptyMovieList(){
+        const listaFilmes = document.getElementsByClassName('containerFilmes')[0];
+        listaFilmes.innerHTML = "";
+    }
+
+    async function listarFilmes() {
+        let moviesList = [];
+        let movie;
+        let caminhoImagem;
+        const url = 'https://api.themoviedb.org/3/trending/movie/week?api_key=a12fe6b392dc22eceae21da559197bf3&language=pt-BR'
+        const fetchResponse = await fetch(url);
+        const urlImagem = await retornarURL();
+        let filme = await fetchResponse.json();
+        filme.results.forEach(resultado => {
+            movie = {};
+            movie.title = resultado.original_title;
+            movie.year = resultado.release_date.split('-')[0];
+            movie.rating = resultado.vote_average;
+            movie.description = resultado.overview;
+            movie.image = urlImagem.images.base_url + urlImagem.images.poster_sizes[4] + resultado.poster_path;
+            moviesList.push(movie);
+        })
+        emptyMovieList();
+        moviesList.forEach(movie => renderMovie(movie))
+    }
+
+    async function retornarURL() {
+        const url = 'https://api.themoviedb.org/3/configuration?api_key=a12fe6b392dc22eceae21da559197bf3';
+        const fetchResponse = await fetch(url)
+        return fetchResponse.json();
+    }
+
+    async function search(){
+        let moviesList = [];
+        let query = document.getElementById('iptPesquisa').value.split(' ').join('%20');
+
+        const url = `https://api.themoviedb.org/3/search/movie?api_key=a12fe6b392dc22eceae21da559197bf3&language=pt-BR&query=${query}&page=1&include_adult=false`;
+        const fetchResponse = await fetch(url);
+        let filme = await fetchResponse.json();
+        const urlImagem = await retornarURL();
+        filme.results.forEach(resultado => {
+            movie = {};
+            movie.title = resultado.original_title;
+            movie.year = resultado.release_date.split('-')[0];
+            movie.rating = resultado.vote_average;
+            movie.description = resultado.overview;
+            movie.image = urlImagem.images.base_url + urlImagem.images.poster_sizes[4] + resultado.poster_path;
+            moviesList.push(movie);
+        })
+        emptyMovieList();
+        moviesList.forEach(movie => renderMovie(movie))
+    }
+</script>
+
+</html>
