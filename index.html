@@ -137,6 +137,7 @@
             display: flex;
             align-items: center;
             column-gap: 3px;
+            cursor: pointer;
         }
 
         .filme-descricao {
@@ -148,7 +149,7 @@
     </style>
 </head>
 
-<body onload="listarFilmes()">
+<body onload="listPopularMovies(); checkFavoritos.checked = false;">
     <div class="container">
         <h1>
             Filmes Populares
@@ -157,8 +158,10 @@
             <input type="text" id="iptPesquisa" placeholder="Digite algum filme para pesquisar...">
             <button onclick="search()"><img src="./img/lupa.png" alt="ícone de lupa"></button>
         </div>
+        <!-- <button onclick="resetFavorites()">Resetar favoritos</button>
+        <button onclick="console.log(getFavoriteMovies());">Ver favoritos</button> -->
         <div class="mostrarFavoritos">
-            <input type="checkbox" id="checkFavoritos">
+            <input type="checkbox" id="checkFavoritos" onclick="showFavorites()">
             <label for="checkFavoritos">Mostrar meus filmes favoritos apenas</label>
         </div>
         <div class="containerFilmes"></div>
@@ -166,7 +169,7 @@
 </body>
 <script>
     document.getElementById('iptPesquisa').addEventListener('keydown', event => {
-        if(event.key === "Enter" && iptPesquisa.value != ""){
+        if (event.key === "Enter" && iptPesquisa.value != "") {
             search();
         }
     })
@@ -177,7 +180,9 @@
         // criando um filme
         const filme = document.createElement('div');
         filme.classList.add('filme');
+        filme.id = movie.id;
         listaFilmes.appendChild(filme);
+
         // colocando a filme-imagem, filme-titulo-acoes e filme-descricao no filme
         const divFilmeImagem = document.createElement('div');
         const divFilmeTituloAcoes = document.createElement('div');
@@ -188,37 +193,47 @@
         filme.appendChild(divFilmeImagem);
         filme.appendChild(divFilmeTituloAcoes);
         filme.appendChild(divFilmeDescricao);
+
         // colocando uma imagem
         const imagemDoFilme = document.createElement('img');
         imagemDoFilme.src = movie.image;//Dinâmico
         imagemDoFilme.alt = `Capa do filme ${movie.title}`;//Dinâmico
         divFilmeImagem.appendChild(imagemDoFilme);
+
         // criando a div título
         const divDoTitulo = document.createElement('div');
         divDoTitulo.classList.add('divTitulo');
         divDoTitulo.textContent = `${movie.title} (${movie.year})`;//Dinâmico
         divFilmeTituloAcoes.appendChild(divDoTitulo);
+
         // Criando a div ações
         const divDasAcoes = document.createElement('div');
         divDasAcoes.classList.add('divAcoes');
         divFilmeTituloAcoes.appendChild(divDasAcoes);
+
         // Criando as divs de cada uma das ações
         const divDaNota = document.createElement('div');
         const divParaFavoritar = document.createElement('div');
         divDaNota.classList.add('divNota');
         divParaFavoritar.classList.add('divFavoritar');
+        divParaFavoritar.addEventListener('click', function () {
+            favoritar(movie);
+        });
         divDasAcoes.appendChild(divDaNota);
         divDasAcoes.appendChild(divParaFavoritar);
+
         // colocando a imagem da estrela na nota
         const imagemEstrela = document.createElement('img');
         imagemEstrela.src = "./img/star.png";
         imagemEstrela.alt = "Ícone de uma estrela";
         divDaNota.appendChild(imagemEstrela);
+
         // colocando a nota do filme
         const notaDoFilme = document.createElement('span');
         notaDoFilme.classList.add("spnTextoNota");
         notaDoFilme.textContent = movie.rating//Dinâmico
         divDaNota.appendChild(notaDoFilme);
+
         // colocando o ícone de favoritar
         const imagemCoracao = document.createElement('img');
         if (movie.isFavorited) {
@@ -229,65 +244,145 @@
             imagemCoracao.alt = "Ícone de um coração";
         }
         divParaFavoritar.appendChild(imagemCoracao);
+
         // colocando o texto favoritar
         const textoFavoritar = document.createElement('span');
         textoFavoritar.textContent = "Favoritar";
         divParaFavoritar.appendChild(textoFavoritar);
+
         // colocando a descrição do filme
         divFilmeDescricao.textContent = movie.description; // Dinâmico
     }
 
-    function emptyMovieList(){
+    function emptyMovieList() {
         const listaFilmes = document.getElementsByClassName('containerFilmes')[0];
         listaFilmes.innerHTML = "";
     }
 
-    async function listarFilmes() {
-        let moviesList = [];
-        let movie;
-        let caminhoImagem;
+    async function listPopularMovies() {
         const url = 'https://api.themoviedb.org/3/trending/movie/week?api_key=a12fe6b392dc22eceae21da559197bf3&language=pt-BR'
-        const fetchResponse = await fetch(url);
-        const urlImagem = await retornarURL();
-        let filme = await fetchResponse.json();
-        filme.results.forEach(resultado => {
-            movie = {};
-            movie.title = resultado.original_title;
-            movie.year = resultado.release_date.split('-')[0];
-            movie.rating = resultado.vote_average;
-            movie.description = resultado.overview;
-            movie.image = urlImagem.images.base_url + urlImagem.images.poster_sizes[4] + resultado.poster_path;
-            moviesList.push(movie);
-        })
-        emptyMovieList();
-        moviesList.forEach(movie => renderMovie(movie))
+        getMovies(url);
     }
 
-    async function retornarURL() {
+    async function returnURL() {
         const url = 'https://api.themoviedb.org/3/configuration?api_key=a12fe6b392dc22eceae21da559197bf3';
         const fetchResponse = await fetch(url)
         return fetchResponse.json();
     }
 
-    async function search(){
-        let moviesList = [];
+    async function search() {
         let query = document.getElementById('iptPesquisa').value.split(' ').join('%20');
-
         const url = `https://api.themoviedb.org/3/search/movie?api_key=a12fe6b392dc22eceae21da559197bf3&language=pt-BR&query=${query}&page=1&include_adult=false`;
+        getMovies(url);
+    }
+
+    async function getMovies(url) {
+        let moviesList = [];
+        let movie;
+        let favoriteMovies = getFavoriteMovies();
         const fetchResponse = await fetch(url);
+        const urlImagem = await returnURL();
         let filme = await fetchResponse.json();
-        const urlImagem = await retornarURL();
         filme.results.forEach(resultado => {
             movie = {};
+            movie.id = resultado.id;
             movie.title = resultado.original_title;
             movie.year = resultado.release_date.split('-')[0];
             movie.rating = resultado.vote_average;
             movie.description = resultado.overview;
             movie.image = urlImagem.images.base_url + urlImagem.images.poster_sizes[4] + resultado.poster_path;
+            movie.isFavorited = isFavorite(movie);
             moviesList.push(movie);
         })
         emptyMovieList();
         moviesList.forEach(movie => renderMovie(movie))
+    }
+
+    function favoritar(movie) {
+        let favoriteMovies = getFavoriteMovies() == null ? [] : getFavoriteMovies();
+        let elementoFilme = document.getElementById(movie.id);
+        // console.log(elementoFilme.getElementsByClassName('filme-titulo-acoes')[0].getElementsByClassName('divAcoes')[0].getElementsByClassName('divFavoritar')[0].getElementsByTagName('img')[0].src);
+        if (isFavorite(movie)) {
+            removeFromLocalStorage(movie);
+            elementoFilme.getElementsByClassName('filme-titulo-acoes')[0].getElementsByClassName('divAcoes')[0].getElementsByClassName('divFavoritar')[0].getElementsByTagName('img')[0].src = "./img/heart.png";
+        } else {
+            saveToLocalStorage(movie);
+            elementoFilme.getElementsByClassName('filme-titulo-acoes')[0].getElementsByClassName('divAcoes')[0].getElementsByClassName('divFavoritar')[0].getElementsByTagName('img')[0].src = "./img/heart_filled.png";
+        }
+    }
+
+    function saveToLocalStorage(movie) {
+        const movies = getFavoriteMovies(); // busca os filmes favoritados no Local Storage
+        movies.push(movie) // inclui o novo filme favorito no array
+        const moviesJSON = JSON.stringify(movies)
+
+        localStorage.setItem('filmesFavoritos', moviesJSON) // salva o array no Local Storage
+
+        // console.log("array de filmes (ADICIONADO): " + movie.title + "id: " + movie.id);
+
+    }
+
+    // E pra buscar no Local Storage:
+
+    function getFavoriteMovies() {
+        let lista = localStorage.getItem('filmesFavoritos');
+        if (lista == null) {
+            return [];
+        }
+        return JSON.parse(localStorage.getItem('filmesFavoritos'));
+    }
+
+    function removeFromLocalStorage(movie) {
+        const movies = getFavoriteMovies(); // busca os filmes favoritados no Local Storage
+
+        const index = getFavoriteIndex(movie);
+        movies.splice(index, 1);
+
+        const moviesJSON = JSON.stringify(movies)
+
+        localStorage.setItem('filmesFavoritos', moviesJSON) // salva o array no Local Storage
+
+        // console.log("array de filmes (REMOVIDO): " + movie.title);
+    }
+
+    function isFavorite(movie) {
+        const movies = getFavoriteMovies();
+        for (var i = 0; i < movies.length; i++) {
+            if (movies[i].id == movie.id) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function resetFavorites() {
+        localStorage.removeItem('filmesFavoritos');
+    }
+
+    function showFavorites() {
+        let checkbox = document.getElementById('checkFavoritos');
+        if (checkbox.checked) {
+            const favoriteMovies = getFavoriteMovies();
+            emptyMovieList();
+            favoriteMovies.forEach(movie => {
+                movie.isFavorited = true;
+                renderMovie(movie);
+            }
+            )
+        }
+        else {
+            listPopularMovies();
+        }
+    }
+
+    function getFavoriteIndex(movie){
+        let favoriteMovies = getFavoriteMovies();
+        for (let index = 0; index < favoriteMovies.length; index++) {
+            if(favoriteMovies[index].id == movie.id){
+                return index;
+            }
+        }
+        return -1;
     }
 </script>
 
